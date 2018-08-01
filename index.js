@@ -1,5 +1,6 @@
-import AppFooter from './src/main.vue'
+import VmCalendar from './src/main.vue'
  
-AppFooter.install = function(){
-	Vue.component('AppFooter',AppFooter)
+export default VmCalendar;
+if (typeof window !== 'undefined' && window.Vue) {
+  window.Vue.component('vm-calendar', VmCalendar);
 }

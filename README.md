@@ -3,7 +3,8 @@
 > 这是一个基于vue 2.X的日历组件
 > 
 ## 预览
-![Alt text](https://raw.githubusercontent.com/pcloth/ve-calendar/master/images/demo.gif)
+![Alt text](https://github.com/wuchuixu/vm-calendar/blob/master/static/images/demo1.jpg)
+![Alt text](https://github.com/wuchuixu/vm-calendar/blob/master/static/images/demo2.jpg)
 
 # 目前功能:
 >1、显示所有月份或者单月

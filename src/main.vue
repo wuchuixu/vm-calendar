@@ -16,24 +16,45 @@
 				<slot name="header" />
 			</template>
 		</div>
-		<div :class="['calendar-weekly',{ fixed: fConfig.headerFixed }]" v-if="fLabels.weeks && fLabels.weeks.length > 0">
+		<div :class="['calendar-weekly',{ fixed: fConfig.headerFixed }]" v-if="fLabels.weeks && fLabels.weeks.length > 0 && fConfig.spread">
 			<ul class="calendar-week">
 				<li v-for="item in fLabels.weeks" :key="item">{{ item }}</li>
 			</ul>
 		</div>
 		<div class="calendar-body">
-			<div class="calendar-content">
+			<div class="calendar-content" v-if="fConfig.spread">
 				<div class="calendar-item" v-for="(date,i) in dates" :key="i">
 					<div class="calendar-item-header">
 						<span>{{ date.year }}{{ fLabels.year }}{{ date.month }}{{ fLabels.month }}</span>
 					</div>
 					<ul class="days">
-						<li :class="{ selected: day.selected, disabled: day.disabled }" v-for="(day,idx) in date.days" :key="idx" @click="selectChange(day,date)">
-							<div>{{ day.value }}</div>
-							<span class="desc ">{{ day.desc }}</span>
+						<li :class="{ selected: day.selected, disabled: day.disabled, other: day.month !== date.month }" v-for="(day,idx) in date.days" :key="idx" @click="selectChange(day)">
+							<div v-if="fConfig.fill">{{ day.date }}</div>
+							<div v-else>{{ day.month == date.month ? day.date : '' }}</div>
+							<div class="desc ignore" v-html="day.desc || ''"></div>
 						</li>
 					</ul>
 				</div>
+			</div>
+			<div class="calendar-content" v-else>
+				<div class="calendar-item">
+					<div class="calendar-item-header">
+						<div class="left iconfont icon-arrow-left" @click="monthChange(-1)"></div>
+						<div class="center">{{ currentYear }}{{ fLabels.year }}{{ currentMonth }}{{ fLabels.month }}</div>
+						<div class="right iconfont icon-arrow-right" @click="monthChange(1)"></div>
+					</div>
+					<ul class="calendar-week">
+						<li v-for="item in fLabels.weeks" :key="item">{{ item }}</li>
+					</ul>
+					<ul class="days">
+						<li :class="{ selected: day.selected, disabled: day.disabled, other: day.month !== currentMonth }" v-for="(day,idx) in dateMaps[`${currentYear}-${currentMonth}`] || []" :key="idx" @click="selectChange(day)">
+							<div v-if="fConfig.fill">{{ day.date }}</div>
+							<div v-else>{{ day.month == currentMonth ? day.date : '' }}</div>
+							<div class="desc ignore" v-html="day.desc || ''"></div>
+						</li>
+					</ul>
+				</div>
+				
 			</div>
 		</div>
 	</div>
@@ -41,12 +62,15 @@
 <script>
 
 export default {
-	name: "appCalendar",
+	name: "vmCalendar",
 	data (){
 		return {
 			fLabels: {},
 			fConfig: {},
 			dates: [],
+			currentYear: new Date().getFullYear(),
+			currentMonth: new Date().getMonth() + 1,
+			dateMaps: {},
 			selected: []
 		}
 	},
@@ -69,14 +93,17 @@ export default {
 		},this.labels);
 		
 		this.fConfig = Object.assign({
+			spread: true,
+			fill: false,
 			multipleSelect: false,
 			headerFixed: true,
-			startYearMonth: `${nowYear}-${nowMonth}`,
-			endYearMonth: `${nowYear + 1}-${nowMonth}`,
-			disableDays: [],
+			startYearMonth: `${nowYear}-${nowMonth}`,   // 2018-08 、2018/8、 2018,08
+			endYearMonth: `${nowYear + 1}/${nowMonth}`,
+			defaultYearMonth: `${nowYear},${nowMonth}`,
+			customDays: [],
 			cancelBtnColor:'#F58400',
 			confirmBtnColor:'#F58400',
-			dayDesc: '可选'
+			globalDesc: ''
 		},this.config);
 		
 		this.initCalendar(this.fConfig);
@@ -92,32 +119,62 @@ export default {
 		},
 		initCalendar (config = {}){
 			let _t = this;
-			let { startYearMonth, endYearMonth, dayDesc, disableDays } = config;
+			let { startYearMonth, endYearMonth, defaultYearMonth, globalDesc, customDays, spread, fill } = config;
 			let starts = this.dateTransform(startYearMonth),
 				ends = this.dateTransform(endYearMonth),
+				defaults = this.dateTransform(defaultYearMonth),
 				sy = Number(starts[0]),
 				sm = Number(starts[1]),
 				ey = Number(ends[0]),
-				em = Number(ends[1]);
-				
-			let differ = (ey - sy)/Math.abs(ey - sy) || 1;
+				em = Number(ends[1]),
+				dir = ey != sy ? (ey - sy)/Math.abs(ey - sy) : ((em - sm)/Math.abs(em - sm) || 1);
+			this.currentYear = Number(defaults[0]);
+			this.currentMonth = Number(defaults[1]);
 			
-			buildDates(sy,sm,differ);
-			function buildDates(y,m,differ){
-				let days = [];
-				let day = new Date(`${y},${m},1`).getDay();
+			(function buildDates(y,m,dr){
+				let days = [],
+					pr = m - dr, 
+					nr = m + dr,
+					py = pr >= 13 || pr <= 0 ? y - dr : y, 
+					pm = pr >= 13 ? 1 : (pr <= 0 ? 12 : pr), 
+					ny = nr >= 13 || nr <= 0 ? y + dr : y, 
+					nm = nr >= 13 ? 1 : (nr <= 0 ? 12 : nr),
+				    day = new Date(`${y},${m},1`).getDay();
 				for(let i = 0;i < day;i++){
 					days.push({
-						value: '',
+						year: py,
+						month: pm,
+						date: _t.getDays(py,pm) - (day - i - 1),
 						desc: ''
 					});
 				}
 				for(let i = 1;i <= _t.getDays(y,m);i++){
+					let desc = globalDesc,
+						disabled = false,
+						selected = false;
+					customDays.forEach(d => {
+						if(d.year == y && d.month == m && d.date == i){
+							desc = d.desc;
+							disabled = !!d.disabled;
+							selected = !!d.selected;
+						}
+					});
 					days.push({
-						value: i,
-						desc: dayDesc,
-						disabled: false,
-						selected: false
+						year: y,
+						month: m,
+						date: i,
+						desc,
+						disabled,
+						selected
+					});
+				}
+				let last = days.length % 7 == 0 ? 0 : (7 - days.length % 7);
+				for(let i = 1;i <= last;i++){
+					days.push({
+						year: ny,
+						month: nm,
+						date: i,
+						desc: ''
 					});
 				}
 				_t.dates.push({
@@ -125,13 +182,9 @@ export default {
 					month: m,
 					days: days
 				});
-				if(!(y == ey && m == em)){
-					let r = m + differ;
-					let nm = r >= 13 ? 1 : (r <= 0 ? 12 : r);
-					let ny = r >= 13 || r <= 0 ? y + differ : y;
-					buildDates(ny, nm, differ);
-				}
-			}
+				_t.dateMaps[`${y}-${m}`] = days;
+				!(y == ey && m == em) && buildDates(ny, nm, dr);
+			})(sy,sm,dir);
 		},
 		dateTransform (date){
 			let reg = RegExp(/[-/,]/),
@@ -142,7 +195,16 @@ export default {
 			let d = new Date(y, m, 0);
     		return d.getDate();
 		},
-		selectChange(day,date){
+		monthChange(n){
+			let dr = this.currentMonth + n;
+			let nm = dr >= 13 ? 1 : (dr <= 0 ? 12 : dr);
+			let ny = dr >= 13 ? (this.currentYear + 1) : (dr <= 0 ? (this.currentYear - 1) : this.currentYear)
+			if(this.dateMaps[`${ny}-${nm}`]){
+				this.currentYear = ny;
+				this.currentMonth = nm;
+			}
+		},
+		selectChange(day){
 			if(!day.disabled){
 				this.selected = [];
 				!this.fConfig.multipleSelect && this.dates.forEach(v => {
@@ -153,11 +215,7 @@ export default {
 				day.selected = !day.selected;
 				this.dates.forEach(v => {
 					v.days && v.days.forEach(vv => {
-						vv.selected && this.selected.push({
-							year: v.year,
-							month: v.month,
-							date: vv.value
-						});
+						vv.selected && this.selected.push(vv);
 					});
 				});
 				this.$emit('change',{
@@ -173,8 +231,6 @@ export default {
 </script>
 <style>
 	.calendar{
-		/*padding: 20px;*/
-		/*background: #f2f2f2;*/
 		position: relative;
 	}
 	.calendar-fixed{
@@ -183,7 +239,8 @@ export default {
 	.calendar ul{
 		list-style: none;
 	}
-	.calendar-header,.calendar-week{
+	.calendar-header,
+	.calendar-week{
 		display: flex;
 		align-items: center;
 		text-align: center;
@@ -206,7 +263,7 @@ export default {
 	}
 	.calendar-weekly{
 		width: 100%;
-		padding: 16px 0;
+		padding: 16px 20px;
 		box-sizing: border-box;
 	}
 	.calendar-weekly.fixed{
@@ -231,14 +288,26 @@ export default {
 		float: left;
 		position: relative;
 		width: 14.2857%;
-		padding: 6px 0;
+		min-height: 40px;
+		padding: 1px;
+		box-sizing: border-box;
 		border-radius: 6px;
 	}
 	.calendar-item .days li .desc{
-		
+		position: absolute;
+		bottom: 0;
+		left: 0;
+		width: 100%;
+	}
+	.calendar-item .days li .ignore{
+		bottom: -10px;
+		font-size: 12px;
 	}
 	.calendar-item .days li.disabled{
-		color: #BCBCBC;
+		color: #666;
+	}
+	.calendar-item .days li.other{
+		color: #ccc;
 	}
 	.calendar-item .days li.selected{
 		background: #0084D7;
@@ -248,9 +317,13 @@ export default {
 		margin-bottom: 20px;
 	}
 	.calendar-item-header{
+		display: flex;
 		padding-bottom: 10px;
 		color: #999;
 		border-bottom: 1px solid #f3f3f3;
 	}
-	
+	.calendar-item-header .center{
+		flex: 1;
+		text-align: center;
+	}
 </style>

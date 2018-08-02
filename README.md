@@ -2,14 +2,8 @@
 
 > 这是一个基于vue 2.X的日历组件
 > 
-<p align="center">
-   <a href="https://www.npmjs.com/package/ve-calendar"><img src="https://img.shields.io/npm/v/ve-calendar.svg?style=flat" alt="npm"></a>
-   <a href="https://www.npmjs.com/package/ve-calendar"><img src="https://img.shields.io/npm/dm/ve-calendar.svg?style=flat" alt="npm"></a>
- </p>
- 
-
-## <a href="#">查看在线demo</a>
-
+## 预览
+![Alt text](https://raw.githubusercontent.com/pcloth/ve-calendar/master/images/demo.gif)
 
 # 目前功能:
 >1、显示所有月份或者单月
@@ -30,14 +24,15 @@ npm install vm-calendar --save
 ```
 ### 第二步，在你的vue页面里
 ``` js
+<script>
 import VmCalendar from "vm-calendar";
 
-// in your vue <script>
 export default {
     components: {
         VmCalendar
     }
 }
+</script>
 ```
 
 ### 第三步，加载模板:
@@ -55,16 +50,29 @@ export default {
 
 ## props参数
 
-| 参数名称            | 类型    | 默认值              | 说明                                                                                                                                  |
-| ------------------- | ------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| labels              | object  |                 | 
-label配置，   year: '年' , month: '月', confirm: '确认', cancel: '取消', title: '选择日期', weeks:['日','一','二','三','四','五','六']                                                                                         |
-| config              | object  |                 | 
- {
-    spread: true,
-    fill: false,
-    multipleSelect: false,
-    headerFixed: true,
+| 参数名称               | 类型    | 默认值               |说明                                                                             |
+| --------------------- | ------- | ------------------- | ------------------------------------------------------------------------------- |
+| labels                | object  |                     |                                                                                 |
+| labels.year           | string  |     年              |                                                                                 |
+| labels.month          | string  |     月              |                                                                                 |
+| labels.confirm        | string  |     确认            |                                                                                 |
+| labels.cancel         | string  |     取消            |                                                                                 |
+| labels.title          | string  |     选择日期         |                                                                                 |
+| labels.weeks          | array   | ['日','一','二','三','四','五','六']  |                                                                |
+| config                | object  |                     |                                                                                 |
+| config.spread         | boolean |      true            |  是否显示所有月份                                                                |
+| config.fill           | boolean |      false           |  每月是否填充完整                                                                |
+| config.multipleSelect | boolean |      false           |  是否多选                                                                       |
+| config.headerFixed    | boolean |      true            |  头部固定定位                                                                   |
+| config.startYearMonth | string  |      当前年月         |  开始日期   支持  yyyy-MM 、yyyy/MM、 yyyy,MM                                      |
+| config.endYearMonth   | string  |      当前年月加一年   |   结束日期   支持  yyyy-MM 、yyyy/MM、 yyyy,MM                                      |
+|config.defaultYearMonth| string  |      当前年月         |   默认日期   支持  yyyy-MM 、yyyy/MM、 yyyy,MM                                      |
+| config.customDays     | array   |      []              |   自定义日期  { year: 2018,month: 8,date: 2,disabled: true,selected: false,desc: '禁用' }                                   |
+| config.cancelBtnColor | string  |      #F58400         |   取消按钮颜色                                                                     |
+| config.confirmBtnColor| string  |      #F58400         |   确认按钮颜色                                                                     |
+| config.globalDesc     | string  |                      |   全局desc                                                                       |
+
+
     startYearMonth: `${nowYear}-${nowMonth}`,   // 2018-08 、2018/8、 2018,08
     endYearMonth: `${nowYear + 1}/${nowMonth}`,
     defaultYearMonth: `${nowYear},${nowMonth}`,

@@ -74,15 +74,6 @@ export default {
 | config.globalDesc     | string  |                      |   全局desc                                                                       |
 
 
-    startYearMonth: `${nowYear}-${nowMonth}`,   // 2018-08 、2018/8、 2018,08
-    endYearMonth: `${nowYear + 1}/${nowMonth}`,
-    defaultYearMonth: `${nowYear},${nowMonth}`,
-    customDays: [],
-    cancelBtnColor:'#F58400',
-    confirmBtnColor:'#F58400',
-    globalDesc: ''
- }                                                                                      |
-
 ## 事件
 | 名字             | 参数                   | 说明                                                  |
 | ---------------- | ---------------------- | ---------------------------------------------------- |

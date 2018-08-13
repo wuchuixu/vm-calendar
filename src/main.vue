@@ -144,28 +144,14 @@ export default {
 					days.push({
 						year: py,
 						month: pm,
-						date: _t.getDays(py,pm) - (day - i - 1),
-						desc: ''
+						date: _t.getDays(py,pm) - (day - i - 1)
 					});
 				}
 				for(let i = 1;i <= _t.getDays(y,m);i++){
-					let desc = globalDesc,
-						disabled = false,
-						selected = false;
-					customDays.forEach(d => {
-						if(d.year == y && d.month == m && d.date == i){
-							desc = d.desc;
-							disabled = !!d.disabled;
-							selected = !!d.selected;
-						}
-					});
 					days.push({
 						year: y,
 						month: m,
-						date: i,
-						desc,
-						disabled,
-						selected
+						date: i
 					});
 				}
 				let last = days.length % 7 == 0 ? 0 : (7 - days.length % 7);
@@ -173,10 +159,23 @@ export default {
 					days.push({
 						year: ny,
 						month: nm,
-						date: i,
-						desc: ''
+						date: i
 					});
 				}
+				days = days.reduce((res, cur) => {
+					cur.desc = globalDesc;
+					cur.disabled = false;
+					cur.selected = false;
+					customDays.forEach(d => {
+						if(d.year == cur.year && d.month == cur.month && d.date == cur.date){
+							cur.desc = d.desc;
+							cur.disabled = !!d.disabled;
+							cur.selected = !!d.selected;
+						}
+					});
+					res.push(cur);
+					return res;
+				}, []);
 				_t.dates.push({
 					year: y,
 					month: m,
@@ -206,18 +205,45 @@ export default {
 		},
 		selectChange(day){
 			if(!day.disabled){
+				let _selected = {};
 				this.selected = [];
-				!this.fConfig.multipleSelect && this.dates.forEach(v => {
-					v.days && v.days.forEach(vv => {
-						vv.selected = false;
+				if(!this.fConfig.multipleSelect){
+					this.dates.forEach(m => {
+						m.days && m.days.forEach(d => {
+							d.selected = false;
+						});
 					});
-				});
-				day.selected = !day.selected;
-				this.dates.forEach(v => {
-					v.days && v.days.forEach(vv => {
-						vv.selected && this.selected.push(vv);
+					for(let m in this.dateMaps){
+						this.dateMaps[m].forEach(d => {
+							d.selected = false;
+						});
+					}
+				}
+				if(this.fConfig.spread){
+					this.dates.forEach(m => {
+						m.days && m.days.forEach(d => {
+							if(d.year == day.year && d.month == day.month && d.date == day.date){
+								d.selected = !d.selected;
+							}
+							if(d.selected && !_selected[`${d.year}-${d.month}-${d.date}`]){
+								_selected[`${d.year}-${d.month}-${d.date}`] = 1;
+								this.selected.push(d);
+							}
+						});
 					});
-				});
+				}else{
+					for(let m in this.dateMaps){
+						this.dateMaps[m].forEach(d => {
+							if(d.year == day.year && d.month == day.month && d.date == day.date){
+								d.selected = !d.selected;
+							}
+							if(d.selected && !_selected[`${d.year}-${d.month}-${d.date}`]){
+								_selected[`${d.year}-${d.month}-${d.date}`] = 1;
+								this.selected.push(d);
+							}
+						});
+					}
+				}
 				this.$emit('change',{
 					value: this.selected
 				});
